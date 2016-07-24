@@ -2,11 +2,11 @@ using UnityEngine;
 using System.Collections;
 
 public class PlayerCamera : MonoBehaviour {
-	private GameObject player;
-	private Vector3 offset;
+	GameObject player;
+	Vector3 offset;
 
 	void Start() {
-		player = GameObject.Find ("ubee");
+		player = GameObject.Find("Player");
 		offset = new Vector3(0, 2f, -10f);
 	}
 

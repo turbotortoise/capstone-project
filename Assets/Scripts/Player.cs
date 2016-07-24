@@ -2,7 +2,7 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
-public class Player1 : MonoBehaviour {
+public class Player : MonoBehaviour {
 	//for rigidbody
 	//public Vector3 		eulerAngleVel;
 	public Rigidbody 	rb;
@@ -34,7 +34,7 @@ public class Player1 : MonoBehaviour {
 	//for being attacked
 	private float 		damageTime;
 	//private float 		damageDur = 1f;
-	private float		damageTaken = 0f;
+	private float		health = 1f;
 	private float		prevHitTime;
 	private float		regenSpeed = 0.03f;
 	private float		regenMult; //for upgrades
@@ -46,26 +46,26 @@ public class Player1 : MonoBehaviour {
 	public bool 		canTalk = false;
 
 
-void Start () {
+void Start() {
 	rb = GetComponent<Rigidbody>();
-	playerColor = new Color (0, 0, blueComponent, 1);
+	playerColor = new Color(0,0,blueComponent,1);
 	noteList = new List<NoteWeapon> ();
 	removeList = new List<NoteWeapon> ();
-	this.GetComponent<Renderer> ().material.color = new Color (0, 0, 1, 1);
+	GetComponent<Renderer> ().material.color = new Color (0, 0, 1, 1);
 }
 
-private void Move() {
-	if (Input.GetKey ("up")) {
-		rb.MovePosition (transform.position + 
+void Move() {
+	if (Input.GetKey("up")) {
+		rb.MovePosition(transform.position +
 			transform.forward * Time.deltaTime * walkSpeed);
-	} if (Input.GetKey ("right")) {
+	} if (Input.GetKey("right")) {
 		rb.transform.Rotate (Vector3.up, rotateSpeed * Time.deltaTime);
 	} if (Input.GetKey ("left")) {
 		rb.transform.Rotate (Vector3.up, -rotateSpeed * Time.deltaTime);
 	} if (Input.GetKey ("down")) {
 		//need to check if closest to right or left
 		//rb.transform.Rotate (Vector3.up, rotateSpeed * Time.deltaTime);
-		rb.MovePosition (transform.position - 
+		rb.MovePosition (transform.position -
 			transform.forward * Time.deltaTime * (0.5f * walkSpeed));
 	} if (Input.GetKey ("space")) {
 		if ((!inAir) && (!canTalk)) {
@@ -75,20 +75,14 @@ private void Move() {
 	}
 }
 
+public void ApplyDamage(float damage) {
+	health -= damage;
+	if (damage<0) isStable = false;
+}
+
 void OnTriggerEnter(Collider other) {
-	//checks for collisions
-	print ("Collided with " + other.gameObject.tag);
-	if (other.gameObject.tag == "Note") {
-		print ("Collided with note\n");
-		//need spaces for notes
-	} else if (other.gameObject.name == "Enemy") {
-		//collided with an enemy
-	} else if (other.gameObject.tag == "Attack") {
-		//take damage
-		print ("Took Damage");
-		isStable = false;
-		damageTaken = other.gameObject.GetComponent<Weapon>().power;
-	}
+	if (other.gameObject.tag == "Note")
+		print("Collided with note\n");
 }
 
 void OnCollisionEnter(Collision other) {
@@ -96,20 +90,20 @@ void OnCollisionEnter(Collision other) {
         inAir = false;
     }
 }
- 
+
 void OnCollisionStay(Collision other) {
     if (other.gameObject.tag == "Ground" && inAir == true) {
         inAir = false;
     }
 }
- 
+
 void OnCollisionExit(Collision other) {
     inAir = true;
 }
 
 void ChangeColor() {
 	//changes player's color based on health
-	if ((blueComponent - damageTaken) >= 0f) {
+	if ((blueComponent - health) >= 0f) {
 		if (isStable) {
 			if (blueComponent < 1) {
 				//regenerate health
@@ -122,15 +116,15 @@ void ChangeColor() {
 			if (prevHitTime + hitDur <= Time.time) {
 				//take damage
 				prevHitTime = Time.time;
-				blueComponent = blueComponent - damageTaken;
+				blueComponent = blueComponent - health;
 				print ("current health: " + blueComponent);
 				playerColor = new Color (0, 0, blueComponent, 1);
 				this.GetComponent<Renderer> ().material.color = playerColor;
-				damageTaken = 0f;
+				health = 0f;
 			}
 		}
 	}
-	else if (blueComponent - damageTaken < 0f) {
+	else if (blueComponent - health < 0f) {
 		//player is ded
 		print ("Player health depleted");
 		//ded animation

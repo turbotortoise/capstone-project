@@ -1,244 +1,220 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine.UI;
+using ui=UnityEngine.UI;
+
 
 public class Enemy : MonoBehaviour {
-	//for stability
-	public Rigidbody rb;
-	public Vector3	origPos;
-	public bool		isStable = true;
-	private bool	isHit = false;
-	private bool	hasTransformed = false;
-	private bool	isTransforming = false;
-	//for moving
-	private float	runRadius = 12f;
-	private float	walkRadius = 5f;
-	private float	sRadius = 2f;
-	private float	runSpeed = 10f;
-	private float	walkSpeed = 2.5f;
-	private float 	curSpeed = 0f;
-	private float	accelRate = 0.1f;
-	//for health/color
-	private float	health = 1f;
-	private float	regenSpeed;
-	private float	transformSpeed = 0.1f;
-	private Color	dormantColor;
-	private float	dormantPerc = 0;
-	//for player
-	private GameObject 	player;
-	private float		playerDistance; //distance player currently is
-	private float		playerPower = 0f; //power of player's attacks
-	//for attacking
-	public Weapon 	weaponPrefab;
-	private float		laTime = 2.8f; //long ranged attack time
-	private float		saTime = 1f; //short ranged attack time
-	private float		waitTime = 0f; //uses last attack wait time (recharge)
-	private float		prevAttTime = 0f;
-	private bool		isAttacking = false;
-	private float		addTime; //if the enemy doesn't feel like attacking
-	private float		srPower = 0.2f;
-	private float 		lrPower = 0.4f;
-	public float		attPower = 0f;
-	private Vector3		tempPosition;
-	private List<Weapon>	attackList;
-	private List<Weapon> 	removeList;
-	//for text
-	public Text 	displayText;
-	private bool 	newCivilian = true;
-	private string  firstText;
-	private string  secondText;
 
-void Start() {
-	this.transform.position = origPos;
-	this.tag = "Enemy";
-	player = GameObject.Find("ubee");
-	attackList = new List<Weapon> ();
-	removeList = new List<Weapon> ();
-	//texts for testing
-	displayText.text = "";
-	firstText = "Hello there.";
-	secondText = "Hello again.";
+    bool isHit, hasTransformed, isTransforming, isAttacking;
+
+    //for moving
+    float
+        runRadius = 12f,
+        walkRadius = 5f,
+        sRadius = 2f,
+        runSpeed = 10f,
+        walkSpeed = 2.5f,
+        curSpeed = 0f,
+        accelRate = 0.1f,
+    //for health/color
+        health = 1f,
+        regenSpeed,
+        transformSpeed = 0.1f;
+    Color dormantColor;
+
+#pragma warning disable 0108
+    Rigidbody rigidbody;
+#pragma warning restore 0108
+    ui::Text displayText;
+
+    Vector3 origPos;
+    float dormantPerc;
+    //for player
+    Player player;
+    float playerDistance; //distance player currently is
+    float playerPower; //power of player's attacks
+    //for attacking
+    public bool isStable = true;
+    public Attack attackPrefab;
+    float
+        waitTime = 0.75f, //uses last attack wait time (recharge)
+        prevAttTime,
+        addTime, //if the enemy doesn't feel like attacking
+        laTime = 2.8f, //long ranged attack time
+        saTime = 1f, //short ranged attack time
+        srPower = 0.2f,
+        lrPower = 0.4f;
+    public float attPower = 0f;
+    Vector3 tempPosition;
+    Queue<Weapon> attackQueue = new Queue<Weapon>();
+    bool newCivilian = true;
+    string
+        firstText = "Hello there.",
+        secondText = "Hello again.";
+
+    void Awake() {
+        var canvas = GameObject.FindWithTag("Canvas");
+        displayText = canvas.GetComponentInChildren<ui::Text>();
+        rigidbody = GetComponent<Rigidbody>();
+    }
+
+    void Start() {
+        origPos = transform.position;
+        tag = "Enemy";
+        player = GameObject.Find("Player").GetComponent<Player>();
+        displayText.text = "";
+        StartCoroutine(Attacking());
+    }
+
+    IEnumerator Attacking() {
+        while (true) {
+            yield return new WaitForSeconds(waitTime);
+            Attack();
+        }
+    }
+
+
+
+    void ApproachPlayer() {
+        if (isStable) return;
+        if (playerDistance <= sRadius) {
+            //physical attack, enemy does not move
+            if (curSpeed > 0f) curSpeed -= accelRate;
+            else curSpeed = 0f;
+        }
+        else if (playerDistance <= walkRadius) {
+            //enemy approaches player slowly
+            if (curSpeed > walkSpeed) curSpeed -= accelRate;
+            else curSpeed = walkSpeed;
+        }
+        else if (playerDistance <= runRadius) {
+            //gotta run man
+            if (curSpeed < runSpeed) curSpeed += accelRate;
+            else curSpeed = runSpeed;
+        }
+        if ((curSpeed != 0) && (!hasTransformed)) {
+            hasTransformed = true;
+            isTransforming = true;
+        }
+        //for rotating
+        //print("Distance: " + playerDistance + "\nSpeed: " + curSpeed);
+        transform.rotation = Quaternion.LookRotation(
+            player.transform.position - transform.position);
+        rigidbody.MovePosition(
+            transform.position+transform.forward*
+            (curSpeed * Time.deltaTime));
+    }
+
+    void Move() {
+        //changes color of civilian to show health
+        if (!isStable) {
+            if (isHit) {
+                isHit = false;
+                health += playerPower;
+                //do isHit animation yay
+                //maybe also a delay?
+            }
+            if (isTransforming) {
+                health -= transformSpeed * Time.deltaTime;
+                if (health <= 0f) {
+                    isTransforming = false;
+                }
+            }
+            if (health >= 1f) {
+                isTransforming = false;
+                isStable = true;
+                //do transformation animation
+            }
+
+            GetComponent<Renderer>().material.color =
+                new Color(health,health,health);
+        }
+        else {
+            if (isHit) {
+                if (dormantPerc < 1) {
+                    dormantPerc += transformSpeed * Time.deltaTime;
+                    var tempColor = new Color (1f - (dormantColor.r * dormantPerc),
+                        1f - (dormantColor.g * dormantPerc),
+                        1f - (dormantColor.b * dormantPerc));
+                    GetComponent<Renderer>().material.color = tempColor;
+                }
+            }
+        }
+    }
+
+    void Attack() {
+        if (playerDistance <= sRadius) { }
+        if (playerDistance <= walkRadius) {
+            var newAttack = Instantiate<Attack>(attackPrefab);
+            newAttack.tag = "Attack";
+            //attackQueue.Add(newAttack);
+            if (Random.value>0.5) {
+                newAttack.name = "Short";
+                newAttack.GetComponent<Attack>().power = srPower;
+            } else {
+                newAttack.name = "Long";
+                newAttack.GetComponent<Attack>().power = lrPower;
+            }
+
+            tempPosition = player.transform.position; //finds player
+            print("attacking");
+            //var newAttack = attackQueue[0];
+            newAttack.transform.position = transform.position+transform.forward;
+            newAttack.GetComponent<Rigidbody>().AddForce(
+                (transform.forward)*20, ForceMode.Impulse);
+            isAttacking = false;
+            //attackQueue.Remove(newAttack);
+        }
+    }
+
+
+    void Speak() {
+        if (newCivilian) {
+            displayText.text = firstText;
+            newCivilian = false;
+        } else displayText.text = secondText;
+    }
+
+
+    void OnTriggerEnter(Collider other) {
+        if (!isTransforming) {
+            //can't be hit during initial transformation (need to think about more)
+            if (other.gameObject.name == "Note") {
+                //if the player attacked take damage
+                isHit = true;
+                playerPower = player.notePower;
+                dormantColor = other.gameObject.GetComponent<Renderer>().material.color;
+                dormantColor.r = 1f - dormantColor.r;
+                dormantColor.g = 1f - dormantColor.g;
+                dormantColor.b = 1f - dormantColor.b;
+            }
+        }
+    }
+
+
+    void Update() {
+
+        //always check where the player is
+        playerDistance = Vector3.Distance(
+            player.transform.position, transform.position);
+
+        //when civilian is unstable, attack the player
+        if (!isHit && !isAttacking) ApproachPlayer();
+        if (isTransforming || isHit) Move();
+
+        //civilian is stable, player can talk to them
+        if (isStable) {
+            if (isHit) Move();
+            if (playerDistance <= 5f) {
+                //rotate to face player
+                transform.rotation = Quaternion.LookRotation(
+                    player.transform.position-transform.position);
+                player.canTalk = true;
+                if (Input.GetKey("space")) Speak(); //player won't jump
+            } else player.canTalk = false;
+        }
+    }
 }
 
-void ApproachPlayer() {
-	//float curSpeed = 0f;
-	if (!isStable) {
-		if (playerDistance <= sRadius) {
-			//physical attack, enemy does not move
-			if (curSpeed > 0f)
-				curSpeed -= accelRate;
-			else
-				curSpeed = 0f;
-		}
-		else if (playerDistance <= walkRadius) {
-			//enemy approaches player slowly
-			if (curSpeed > walkSpeed)
-				curSpeed -= accelRate;
-			else
-				curSpeed = walkSpeed;
-		}
-		else if (playerDistance <= runRadius) {
-			//gotta run man
-			if (curSpeed < runSpeed)
-				curSpeed += accelRate;
-			else
-				curSpeed = runSpeed;
-		}
-		if ((curSpeed != 0) && (!hasTransformed)) {
-			hasTransformed = true;
-			isTransforming = true;
-		}
-		//for rotating
-		//print("Distance: " + playerDistance + "\nSpeed: " + curSpeed);
-		Vector3 relativePos = player.transform.position - transform.position;
-		rb.transform.rotation = Quaternion.LookRotation(relativePos);
-		rb.MovePosition (transform.position + transform.forward * (
-			curSpeed * Time.deltaTime));
-	}
-	return;
-}
 
-void Transform() {
-	//changes color of civilian to show health
-	if (!isStable) {
-		if (isHit) {
-			isHit = false;
-			health += playerPower;
-			//do isHit animation yay
-			//maybe also a delay?
-		}
-		if (isTransforming) {
-			health -= transformSpeed * Time.deltaTime;
-			if (health <= 0f) {
-				isTransforming = false;
-			}
-		}
-		if (health >= 1f) {
-			isTransforming = false;
-			isStable = true;
-			//do transformation animation
-		}
-		this.GetComponent<Renderer>().material.color = new Color (health, 
-			health, health);
-	}
-	else {
-		if (isHit) {
-			if (dormantPerc < 1) {
-				dormantPerc += transformSpeed * Time.deltaTime;
-				Color tempColor = new Color (1f - (dormantColor.r * dormantPerc),
-					1f - (dormantColor.g * dormantPerc), 
-					1f - (dormantColor.b * dormantPerc));
-				this.GetComponent<Renderer>().material.color = tempColor;
-			}
-		}
-	}
-	return;
-}
-
-/*void Attack() {
-	if (playerDistance <= sRadius) {
-		//physically attack the player
-	}
-	if (playerDistance <= walkRadius) {
-		addTime = Random.Range(0.0f, 2.0f);
-		if (prevAttTime + waitTime + addTime <= Time.time) {
-			prevAttTime = Time.time;
-			isAttacking = true;
-			addTime = Mathf.Floor(addTime);
-			Weapon newAttack = Instantiate<Weapon>(weaponPrefab);
-			if (addTime == 0.0) {
-				newAttack.name = "Short";
-				newAttack.GetComponent<Weapon>().power = srPower;
-				waitTime = saTime;
-			}
-			else {
-				print("in long attack");
-				newAttack.name = "Long";
-				newAttack.GetComponent<Weapon>().power = lrPower;
-				waitTime = laTime;
-			}
-			newAttack.tag = "Attack";
-			attackList.Add(newAttack);
-			tempPosition = player.transform.position; //finds player
-		}
-		else if (isAttacking && (prevAttTime + waitTime <= Time.time)) {
-			print("attacking");
-			prevAttTime = Time.time;
-			Weapon newAttack = attackList[0];
-			newAttack.transform.position = tempPosition;
-			isAttacking = false;
-			attackList.Remove()
-		}
-	}
-	return;
-}*/
-
-
-void Speak() {
-	//when player speaks to civilian
-	//print ("new: " + newCivilian);
-	if (!newCivilian) {
-		displayText.text = secondText;
-	}
-	else {
-		displayText.text = firstText;
-		newCivilian = false;
-	}
-	return;
-}
-
-
-void OnTriggerEnter(Collider other) {
-	if (!isTransforming) {
-		//can't be hit during initial transformation (need to think about more)
-		if (other.gameObject.name == "Note") {
-			//if the player attacked take damage
-			isHit = true;
-			playerPower = player.GetComponent<Player1>().notePower;
-			dormantColor = other.gameObject.GetComponent<Renderer>().material.color;
-			dormantColor.r = 1f - dormantColor.r;
-			dormantColor.g = 1f - dormantColor.g;
-			dormantColor.b = 1f - dormantColor.b;
-		}
-	}
-	return;
-}
-
-void Update() {
-
-	//always check where the player is
-	playerDistance = Vector3.Distance (player.transform.position, this.transform.position);
-
-	//when civilian is unstable, attack the player
-	if (!isHit && !isAttacking) {
-		ApproachPlayer();
-	}
-	if (isTransforming || isHit) {
-		Transform();
-	}
-
-	//civilian is stable, player can talk to them
-	if (isStable) {
-		if (isHit)
-			Transform();
-		if (playerDistance <= 5f) {
-			//rotate to face player
-			Vector3 relativePos = player.transform.position - transform.position;
-			rb.transform.rotation = Quaternion.LookRotation(relativePos);
-			//speak
-			player.GetComponent<Player1>().canTalk = true; //player won't jump
-			if (Input.GetKey("space")) {
-				Speak();
-			}
-		}
-		else {
-			player.GetComponent<Player1>().canTalk = false;
-		}
-	}
-	//else if (!isStable) {
-	//	Attack();
-	//}
-}
-
-}

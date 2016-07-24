@@ -20,12 +20,12 @@ public class Note : MonoBehaviour {
 	void Start() {
 		this.transform.position = origPos;
 		this.tag = "Note";
-		player = GameObject.Find ("ubee");
-		this.GetComponent<Renderer> ().material.color = noteColor;
+		player = GameObject.Find("Player");
+		this.GetComponent<Renderer>().material.color = noteColor;
 	}
 
 	void ApproachPlayer() {
-		playerDistance = Vector3.Distance (player.transform.position, 
+		playerDistance = Vector3.Distance (player.transform.position,
 			this.transform.position);
 		float step = noteSpeed * Time.deltaTime;
 		//print ("playerDistance: " + playerDistance + "\nnoteRadius: " + noteRadius);//"\nplayerDistance <= noteRadius: " + (playerDistance <= noteRadius));
