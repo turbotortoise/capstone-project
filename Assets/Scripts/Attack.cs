@@ -18,7 +18,7 @@ public class Attack : MonoBehaviour {
 	}
 
 	void OnCollisionEnter(Collision collision) {
-		if (collision.rigidbody.tag!="Player") return;
+		if (collision.rigidbody && collision.rigidbody.tag!="Player") return;
 		collision.rigidbody.GetComponent<Player>().ApplyDamage(power);
 	}
 }

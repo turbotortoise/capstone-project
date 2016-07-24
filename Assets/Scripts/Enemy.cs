@@ -67,6 +67,7 @@ public class Enemy : MonoBehaviour {
         StartCoroutine(Attacking());
     }
 
+
     IEnumerator Attacking() {
         while (true) {
             yield return new WaitForSeconds(waitTime);
@@ -74,6 +75,13 @@ public class Enemy : MonoBehaviour {
         }
     }
 
+
+    public void AppyDamage(float damage) {
+        health -= damage;
+        if (health<0) Kill();
+    }
+
+    public void Kill() { Destroy(gameObject); }
 
 
     void ApproachPlayer() {

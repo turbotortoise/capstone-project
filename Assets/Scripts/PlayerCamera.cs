@@ -7,14 +7,12 @@ public class PlayerCamera : MonoBehaviour {
 
 	void Start() {
 		player = GameObject.Find("Player");
-		offset = new Vector3(0, 2f, -10f);
+		offset = new Vector3(0,2f,-10f);
 	}
 
 	void Move() {
 		transform.position = player.transform.position + offset;
 	}
 
-	void Update() {
-		Move();
-	}
+	void FixedUpdate() { Move(); }
 }
