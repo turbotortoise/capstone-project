@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 592bf712ecf1ea2408265e306bc05eff
+timeCreated: 1463597761
+licenseType: Free
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences:
+  - weaponPrefab: {fileID: 161506, guid: 31359ba87b342a049b023de115a6dbd8, type: 2}
+  - sphere: {instanceID: 0}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
