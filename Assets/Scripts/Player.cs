@@ -23,8 +23,11 @@ public class Player : MonoBehaviour {
 	Color playerColor, noteColor;
 	public Element element = Element.Water;
 
-	Dictionary<Element,List<GameObject>> attacks =
-		new Dictionary<Element,List<GameObject>>();
+	Dictionary<Element,List<GameObject>> attacks = new Dictionary<Element,List<GameObject>> {
+		{ Element.Water, new List<GameObject>() },
+		{ Element.Plant, new List<GameObject>() },
+		{ Element.Earth, new List<GameObject>() },
+		{ Element.Air, new List<GameObject>() }};
 
 	Dictionary<Element,int> powerLevels = new Dictionary<Element,int> {
 		{ Element.Water, 0 },
@@ -56,14 +59,6 @@ public class Player : MonoBehaviour {
 
 	void Awake() {
 		rigidbody = GetComponent<Rigidbody>();
-		powerLevels[Element.Water] = 0;
-		powerLevels[Element.Plant] = 0;
-		powerLevels[Element.Earth] = 0;
-		powerLevels[Element.Air] = 0;
-		attacks[Element.Water] = new List<GameObject>();
-		attacks[Element.Plant] = new List<GameObject>();
-		attacks[Element.Earth] = new List<GameObject>();
-		attacks[Element.Air] = new List<GameObject>();
 		foreach (var attack in waterAttacks) attacks[Element.Water].Add(attack);
 		foreach (var attack in plantAttacks) attacks[Element.Plant].Add(attack);
 		foreach (var attack in earthAttacks) attacks[Element.Earth].Add(attack);
@@ -139,20 +134,6 @@ public class Player : MonoBehaviour {
 
 	void OnTriggerEnter(Collider other) {
 		if (other.gameObject.tag == "Note") {
-			print("Collided with note\n");
-			/*if (other.gameObject.name == "Water") {
-				waterList.Add(other.gameObject);
-			}
-			else if (other.gameObject.name == "Plant") {
-				plantList.Add(other.gameObject);
-			}
-			else if (other.gameObject.name == "Earth") {
-				earthList.Add(other.gameObject);
-			}
-			else if (other.gameObject.name == "Air") {
-				airList.Add(other.gameObject);
-			}
-			*/
 		}
 	}
 
@@ -231,18 +212,9 @@ public class Player : MonoBehaviour {
 		var prefab = Instantiate(attacks[element][powerLevels[element]]) as GameObject;
 		var attack = prefab.GetComponent<NoteAttack>();
 		attack.transform.position = transform.position+transform.forward;
-		//attack.transform.rotation = Quaternion.identity*transform.forward;
 		attack.GetComponent<Rigidbody>().AddForce(
-            (transform.forward)*20, ForceMode.Impulse);
-		noteList.Add(attack);
-
-		var removeList = new List<NoteAttack>();
-		foreach (var note in noteList)
-			if (note.color.a <= 0f) removeList.Add(note);
-		foreach (var note in removeList) {
-			noteList.Remove(note);
-			Destroy(note);
-		}
+			force: transform.forward*20,
+			mode: ForceMode.Impulse);
 		yield return new WaitForSeconds(delay);
 		wait = false;
 	}
