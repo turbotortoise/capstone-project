@@ -20,6 +20,16 @@ public class Player : MonoBehaviour {
 	private float		noteCollisionDur;
 	public NoteAttack 	notePrefab;
 	private Color 		note1Color;
+	/* for note powers
+	private List<NoteAttack> waterList = new List<NoteAttack>();
+	private List<NoteAttack> plantList = new List<NoteAttack>();
+	private List<NoteAttack> earthList = new List<NoteAttack>();
+	priavate List<NoteAttack> airList = new List<NoteAttack>();
+	private bool 		waterAttack = True;
+	private bool		plantAttack = False;
+	private bool		earthAttack = False;
+	private bool 		airAttack = False;
+	*/
 	//private AudioSource	noteSound1;
 	//for attacking
 	public NoteAttack 	noteWeapon;
@@ -79,6 +89,35 @@ public class Player : MonoBehaviour {
 				rb.AddForce(Vector3.up * jumpHeight, ForceMode.Impulse);
 			}
 		}
+		/*
+		if (Input.GetKey("up") && (!waterAttack) && (waterList.Count != 0)) {
+			//must have at least 1 note in list to use attack
+			waterAttack = True;
+			plantAttack = False;
+			waterAttack = False;
+			earthAttack = False;
+			airAttack = False;
+		}
+		else if (Input.GetKey("right") && (!plantAttack) && (plantList.Count != 0)) {
+			plantAttack = True;
+			waterAttack = False;
+			earthAttack = False;
+			airAttack = False;
+
+		}
+		else if (Input.GetKey("down") && (!earthAttack) && (earthList.Count != 0)) {
+			earthAttack = True;
+			waterAttack = False;
+			plantAttack = False;
+			airAttack = False;
+		}
+		else if (Input.GetKey("left") && (!airAttack) && (airList.Count != 0)) {
+			airAttack = True;
+			waterAttack = False;
+			plantAttack = False;
+			earthAttack = False;
+		}
+		*/
 	}
 
 	public void ApplyDamage(float damage) {
@@ -87,8 +126,22 @@ public class Player : MonoBehaviour {
 	}
 
 	void OnTriggerEnter(Collider other) {
-		if (other.gameObject.tag == "Note")
+		if (other.gameObject.tag == "Note") {
 			print("Collided with note\n");
+			/*if (other.gameObject.name == "Water") {
+				waterList.Add(other.gameObject);
+			}
+			else if (other.gameObject.name == "Plant") {
+				plantList.Add(other.gameObject);
+			}
+			else if (other.gameObject.name == "Earth") {
+				earthList.Add(other.gameObject);
+			}
+			else if (other.gameObject.name == "Air") {
+				airList.Add(other.gameObject);
+			}
+			*/
+		}
 	}
 
 	void OnCollisionEnter(Collision other) {
