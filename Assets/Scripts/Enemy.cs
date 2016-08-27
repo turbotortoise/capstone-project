@@ -119,7 +119,6 @@ public class Enemy : MonoBehaviour {
         if (!isStable) {
             if (isHit) {
                 isHit = false;
-                health += playerPower;
                 //do isHit animation yay
                 //maybe also a delay?
             }
@@ -186,17 +185,14 @@ public class Enemy : MonoBehaviour {
 
 
     void OnTriggerEnter(Collider other) {
-        if (!isTransforming) {
+        if (!isTransforming || !other.attachedRigidbody) {
             //can't be hit during initial transformation (need to think about more)
-            if (other.gameObject.name == "Note") {
-                //if the player attacked take damage
-                isHit = true;
-                playerPower = player.notePower;
-                dormantColor = other.gameObject.GetComponent<Renderer>().material.color;
-                dormantColor.r = 1f - dormantColor.r;
-                dormantColor.g = 1f - dormantColor.g;
-                dormantColor.b = 1f - dormantColor.b;
-            }
+            var note = other.attachedRigidbody.GetComponent<NoteAttack>();
+
+            if (!note) return;
+            //if the player attacked take damage
+            health -= note.power;
+            isHit = true;
         }
     }
 

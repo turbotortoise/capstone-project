@@ -2,42 +2,50 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
+
+
+
+
 public class Player : MonoBehaviour {
 	//for rigidbody
 	//public Vector3 		eulerAngleVel;
-	bool wait;
-	public Rigidbody 	rb;
-	private float 		blueComponent = 1f;
-	private float 		rotateSpeed = 200f;
-	private float 		walkSpeed = 10f;
-	private float		jumpHeight = 50f;
-	private float		jumpMult; //for upgrades
-	private bool		inAir = false;
-	private Color 		playerColor;
-	//for notes
-	public float		notePower = 0.5f; //change depending on combinations
-	private float		noteCollisionTime;
-	private float		noteCollisionDur;
-	public NoteAttack 	notePrefab;
-	private Color 		note1Color;
-	/* for note powers
-	private List<NoteAttack> waterList = new List<NoteAttack>();
-	private List<NoteAttack> plantList = new List<NoteAttack>();
-	private List<NoteAttack> earthList = new List<NoteAttack>();
-	priavate List<NoteAttack> airList = new List<NoteAttack>();
-	private bool 		waterAttack = True;
-	private bool		plantAttack = False;
-	private bool		earthAttack = False;
-	private bool 		airAttack = False;
-	*/
-	//private AudioSource	noteSound1;
-	//for attacking
+	bool wait, inAir;
+
+#pragma warning disable 0108
+    Rigidbody rigidbody;
+#pragma warning restore 0108
+
+	float
+		blueComponent = 1f,
+		rotateSpeed = 200f,
+		walkSpeed = 10f,
+		jumpHeight = 50f,
+		jumpMult = 1.1f;
+
+	float power = 1f;
+
+	Color playerColor, noteColor;
+
+	public enum Element { Water, Plant, Earth, Air };
+	public Element element = Element.Water;
+
+	Dictionary<Element,List<GameObject>> attacks =
+		new Dictionary<Element,List<GameObject>>();
+
+	Dictionary<Element,int> powerLevels =
+		new Dictionary<Element,int>();
+
+	[SerializeField] List<GameObject> waterAttacks = new List<GameObject>();
+	[SerializeField] List<GameObject> plantAttacks = new List<GameObject>();
+	[SerializeField] List<GameObject> earthAttacks = new List<GameObject>();
+	[SerializeField] List<GameObject> airAttacks = new List<GameObject>();
+
 	public NoteAttack 	noteWeapon;
 	private float		prevAttTime;
 	float delay = 1f;
 	private float		attDuration = 1f;
 	private float		noteSpeed = 3f;
-	private List<NoteAttack> noteList = new List<NoteAttack>();
+	List<NoteAttack> noteList = new List<NoteAttack>();
 	private List<NoteAttack> removeList;
 	private float		powerMult; //for upgrades
 	private float		defenseMult; //for upgrades
@@ -58,8 +66,16 @@ public class Player : MonoBehaviour {
 	public Note note1, note2;
 
 
+	void Awake() {
+		rigidbody = GetComponent<Rigidbody>();
+		foreach (var attack in waterAttacks) attacks[Element.Water].Add(attack);
+		foreach (var attack in plantAttacks) attacks[Element.Plant].Add(attack);
+		foreach (var attack in earthAttacks) attacks[Element.Earth].Add(attack);
+		foreach (var attack in airAttacks) attacks[Element.Air].Add(attack);
+	}
+
+
 	void Start() {
-		rb = GetComponent<Rigidbody>();
 		playerColor = new Color(0,0,blueComponent,1);
 		removeList = new List<NoteAttack>();
 		GetComponent<Renderer>().material.color = new Color (0, 0, 1, 1);
@@ -72,21 +88,21 @@ public class Player : MonoBehaviour {
 	void Move() {
 		if (Input.GetKey("a")) Attack();
 		if (Input.GetKey("up")) {
-			rb.MovePosition(transform.position +
+			rigidbody.MovePosition(transform.position +
 				transform.forward * Time.deltaTime * walkSpeed);
 		} if (Input.GetKey("right")) {
-			rb.transform.Rotate (Vector3.up, rotateSpeed * Time.deltaTime);
+			rigidbody.transform.Rotate (Vector3.up, rotateSpeed * Time.deltaTime);
 		} if (Input.GetKey ("left")) {
-			rb.transform.Rotate (Vector3.up, -rotateSpeed * Time.deltaTime);
+			rigidbody.transform.Rotate (Vector3.up, -rotateSpeed * Time.deltaTime);
 		} if (Input.GetKey ("down")) {
 			//need to check if closest to right or left
-			//rb.transform.Rotate (Vector3.up, rotateSpeed * Time.deltaTime);
-			rb.MovePosition (transform.position -
+			//rigidbody.transform.Rotate (Vector3.up, rotateSpeed * Time.deltaTime);
+			rigidbody.MovePosition (transform.position -
 				transform.forward * Time.deltaTime * (0.5f * walkSpeed));
 		} if (Input.GetKey ("space")) {
 			if ((!inAir) && (!canTalk)) {
 				inAir = true;
-				rb.AddForce(Vector3.up * jumpHeight, ForceMode.Impulse);
+				rigidbody.AddForce(Vector3.up * jumpHeight, ForceMode.Impulse);
 			}
 		}
 		/*
@@ -217,7 +233,8 @@ public class Player : MonoBehaviour {
 		print("attacking");
 		if (note1!=null) {
 			//attacks using first note
-			var attack = Instantiate<NoteAttack>(notePrefab);
+			var prefab = attacks[element][powerLevels[element]];
+			var attack = Instantiate(prefab).GetComponent<NoteAttack>();
 			attack.transform.position = transform.position+transform.forward;
 			//attack.transform.rotation = Quaternion.identity*transform.forward;
 			attack.GetComponent<Rigidbody>().AddForce(
