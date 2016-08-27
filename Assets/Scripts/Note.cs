@@ -6,9 +6,12 @@ using System.Collections.Generic;
 public class Note : MonoBehaviour {
 
 	bool hitPlayer;
-	public Color noteColor;
+	public Color color;
 	public AudioClip note;
 	public float power;
+
+	public Element element = Element.Water;
+
 	float
 		delay = 5f,
 		noteSpeed = 5f,
@@ -22,7 +25,7 @@ public class Note : MonoBehaviour {
 		origPos = transform.position;
 		tag = "Note";
 		player = GameObject.Find("Player").GetComponent<Player>();
-		GetComponent<Renderer>().material.color = noteColor;
+		GetComponent<Renderer>().material.color = color;
 		GetComponent<AudioSource>().clip = note;
 		var audio = GetComponent<AudioSource>();
 		audio.loop = false;

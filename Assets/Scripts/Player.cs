@@ -3,13 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 
 
-
-
-
 public class Player : MonoBehaviour {
-	//for rigidbody
-	//public Vector3 		eulerAngleVel;
-	bool wait, inAir;
+	bool wait, inAir, isStable = true;
+	float delay = 1f;
 
 #pragma warning disable 0108
     Rigidbody rigidbody;
@@ -22,52 +18,52 @@ public class Player : MonoBehaviour {
 		jumpHeight = 50f,
 		jumpMult = 1.1f;
 
-	float power = 1f;
+	public float power = 1f;
 
 	Color playerColor, noteColor;
-
-	public enum Element { Water, Plant, Earth, Air };
 	public Element element = Element.Water;
 
 	Dictionary<Element,List<GameObject>> attacks =
 		new Dictionary<Element,List<GameObject>>();
 
-	Dictionary<Element,int> powerLevels =
-		new Dictionary<Element,int>();
+	Dictionary<Element,int> powerLevels = new Dictionary<Element,int> {
+		{ Element.Water, 0 },
+		{ Element.Plant, 0 },
+		{ Element.Earth, 0 },
+		{ Element.Air, 0 }};
 
 	[SerializeField] List<GameObject> waterAttacks = new List<GameObject>();
 	[SerializeField] List<GameObject> plantAttacks = new List<GameObject>();
 	[SerializeField] List<GameObject> earthAttacks = new List<GameObject>();
 	[SerializeField] List<GameObject> airAttacks = new List<GameObject>();
 
-	public NoteAttack 	noteWeapon;
-	private float		prevAttTime;
-	float delay = 1f;
-	private float		attDuration = 1f;
-	private float		noteSpeed = 3f;
+	private float noteSpeed = 3f;
 	List<NoteAttack> noteList = new List<NoteAttack>();
-	private List<NoteAttack> removeList;
-	private float		powerMult; //for upgrades
-	private float		defenseMult; //for upgrades
+	private float powerMult; //for upgrades
+	private float defenseMult; //for upgrades
 	//for being attacked
-	private float 		damageTime;
+	private float damageTime;
 	//private float 		damageDur = 1f;
-	private float		health = 1f;
-	private float		prevHitTime;
-	private float		regenSpeed = 0.03f;
-	private float		regenMult; //for upgrades
-	private float		hitDur = 1f;
-	private float		paralyzeDur = 0.8f;
-	private bool		isStable = true;
+	private float health = 1f;
+	private float prevHitTime;
+	private float regenSpeed = 0.03f;
+	private float regenMult; //for upgrades
+	private float hitDur = 1f;
+	private float paralyzeDur = 0.8f;
 	//private bool		isParalyzed = false; //if hit with long range attack
 	//for communicating
-	public bool 		canTalk = false;
-
-	public Note note1, note2;
-
+	public bool canTalk = false;
 
 	void Awake() {
 		rigidbody = GetComponent<Rigidbody>();
+		powerLevels[Element.Water] = 0;
+		powerLevels[Element.Plant] = 0;
+		powerLevels[Element.Earth] = 0;
+		powerLevels[Element.Air] = 0;
+		attacks[Element.Water] = new List<GameObject>();
+		attacks[Element.Plant] = new List<GameObject>();
+		attacks[Element.Earth] = new List<GameObject>();
+		attacks[Element.Air] = new List<GameObject>();
 		foreach (var attack in waterAttacks) attacks[Element.Water].Add(attack);
 		foreach (var attack in plantAttacks) attacks[Element.Plant].Add(attack);
 		foreach (var attack in earthAttacks) attacks[Element.Earth].Add(attack);
@@ -77,12 +73,12 @@ public class Player : MonoBehaviour {
 
 	void Start() {
 		playerColor = new Color(0,0,blueComponent,1);
-		removeList = new List<NoteAttack>();
 		GetComponent<Renderer>().material.color = new Color (0, 0, 1, 1);
 	}
 
 	public void AddNote(Note note) {
-		note1 = note;
+		powerLevels[note.element]++;
+		element = note.element;
 	}
 
 	void Move() {
@@ -228,34 +224,21 @@ public class Player : MonoBehaviour {
 
 	void Attack() { if (!wait) StartCoroutine(Attacking()); }
 
+
 	IEnumerator Attacking() {
 		wait = true;
 		print("attacking");
-		if (note1!=null) {
-			//attacks using first note
-			var prefab = attacks[element][powerLevels[element]];
-			var attack = Instantiate(prefab).GetComponent<NoteAttack>();
-			attack.transform.position = transform.position+transform.forward;
-			//attack.transform.rotation = Quaternion.identity*transform.forward;
-			attack.GetComponent<Rigidbody>().AddForce(
-                (transform.forward)*20, ForceMode.Impulse);
-			noteList.Add(attack);
-		} //if (noteName2 != "") {
-			//attacks using second note
-			//var note2 = Instantiate<NoteAttack>(notePrefab);
-			//noteList.Add(note2);
-		//}
+		var prefab = Instantiate(attacks[element][powerLevels[element]]) as GameObject;
+		var attack = prefab.GetComponent<NoteAttack>();
+		attack.transform.position = transform.position+transform.forward;
+		//attack.transform.rotation = Quaternion.identity*transform.forward;
+		attack.GetComponent<Rigidbody>().AddForce(
+            (transform.forward)*20, ForceMode.Impulse);
+		noteList.Add(attack);
 
-		foreach (var note in noteList) {
-			//moves all notes and changes their color
-			note.transform.position += note.transform.forward * Time.deltaTime * noteSpeed;
-			var noteColor = note.GetComponent<Renderer>().material.color;
-			note.GetComponent<Renderer>().material.color = noteColor;
-			noteColor.a -= 0.1f * Time.deltaTime;
-			note.GetComponent<Renderer>().material.color = noteColor;
-			if (noteColor.a <= 0f) removeList.Add(note);
-		}
-
+		var removeList = new List<NoteAttack>();
+		foreach (var note in noteList)
+			if (note.color.a <= 0f) removeList.Add(note);
 		foreach (var note in removeList) {
 			noteList.Remove(note);
 			Destroy(note);
